@@ -50,11 +50,13 @@ func LoginHandler(c *gin.Context) {
 func VerifyTokenHandler(c *gin.Context) {
 	// 只要能进到这个 Handler，说明已经过了 JWTAuthMiddleware 的校验
 	userID, _ := c.Get("userID")
+	userRole, _ := c.Get("role")
 
 	// 在这里可以顺便查一下数据库，确保该用户没有被紧急封号（一管/二管操作）
 	// 为简单起见，当前只要 Token 有效就放行
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Token 有效",
 		"user_id": userID,
+		"role":    userRole,
 	})
 }
