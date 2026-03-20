@@ -55,8 +55,23 @@ func SetupRouter() *gin.Engine {
 			// 每次登录或页面刷新、以及通过 JS 定时器轮询调用此接口
 			// 可以一次性拉取最新的任务，并依据 unread_count 播放提示音或显示弹窗红点
 			thirdAdminApi.GET("/my-workspaces", controller.GetMyWorkspacesHandler)
+
 			// 三管点进任务详情去下载 shp 时，触发此接口消除已读状态
 			thirdAdminApi.PUT("/workspaces/:id/read", controller.ReadWorkspaceHandler)
+
+			// 派发任务给调查员
+			thirdAdminApi.POST("/tasks/assign", controller.BulkAssignTaskHandler)
+		}
+
+		// --- 【调查员App业务组】 ---
+		userApi := authApi.Group("/user")
+		userApi.Use(middleware.RoleAuthMiddleware("user"))
+		{
+			// 1. App轮询或刷新用的获取任务列表 API
+			userApi.GET("/my-tasks", controller.GetSurveyorTasksHandler)
+
+			// 2. App点击该任务时调用，消除红点并直接返回地图可以渲染的 GeoJSON 格式！
+			userApi.GET("/tasks/:id/geojson", controller.ReadTaskAndGetGeoJSONHandler)
 		}
 	}
 
