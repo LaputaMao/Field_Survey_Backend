@@ -1,12 +1,10 @@
 package service
 
 import (
-	"errors"
-	"mime/multipart"
-	"time"
-
 	"Field_Survey_Backend/config"
 	"Field_Survey_Backend/model"
+	"errors"
+	"mime/multipart"
 
 	"github.com/xuri/excelize/v2"
 	"golang.org/x/crypto/bcrypt"
@@ -58,12 +56,11 @@ func ImportUsersFromExcel(file multipart.File, creatorID uint, creatorRole strin
 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
 
 		user := model.User{
-			Username:    username,
-			Email:       email,
-			Password:    string(hashedPassword),
-			Role:        targetRole,
-			CreatorID:   creatorID,
-			CreatedDate: time.Now(),
+			Username:  username,
+			Email:     email,
+			Password:  string(hashedPassword),
+			Role:      targetRole,
+			CreatorID: creatorID,
 		}
 		users = append(users, user)
 	}

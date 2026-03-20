@@ -11,7 +11,7 @@ type User struct {
 	Email         string    `Gorm:"size:100" json:"email"`
 	Password      string    `Gorm:"not null" json:"-"`            // json:"-" 保证密码不会被返回给前端
 	Role          string    `Gorm:"not null;size:20" json:"role"` // "user", "sec_admin", "fir_admin"
-	CreatedDate   time.Time `Gorm:"autoCreateTime" json:"created_date"`
+	CreatedAt     time.Time `Gorm:"autoCreateTime" json:"created_at"`
 	LastLoginDate time.Time `json:"last_login_date"`
 	LastIP        string    `Gorm:"size:45" json:"last_ip"`
 	CreatorID     uint      `Gorm:"index"`

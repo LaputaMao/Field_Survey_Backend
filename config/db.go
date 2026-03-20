@@ -1,6 +1,8 @@
 package config
 
 import (
+	"Field_Survey_Backend/model"
+	"fmt"
 	"log"
 
 	"gorm.io/driver/postgres"
@@ -18,6 +20,10 @@ func InitDB() {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("数据库连接失败: %v", err)
+	}
+	err = db.AutoMigrate(&model.User{}, &model.Project{}, &model.Workspace{})
+	if err != nil {
+		fmt.Printf("自动建表失败: %v", err)
 	}
 
 	DB = db
