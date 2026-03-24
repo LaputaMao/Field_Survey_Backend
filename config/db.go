@@ -21,7 +21,7 @@ func InitDB() {
 	if err != nil {
 		log.Fatalf("数据库连接失败: %v", err)
 	}
-	err = db.AutoMigrate(&model.User{}, &model.Project{}, &model.Workspace{}, &model.Task{})
+	err = db.AutoMigrate(&model.User{}, &model.Project{}, &model.Workspace{}, &model.Task{}, &model.ActualRoute{})
 	if err != nil {
 		fmt.Printf("自动建表失败: %v", err)
 	}

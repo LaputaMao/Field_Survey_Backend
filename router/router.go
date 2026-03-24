@@ -72,6 +72,9 @@ func SetupRouter() *gin.Engine {
 
 			// 2. App点击该任务时调用，消除红点并直接返回地图可以渲染的 GeoJSON 格式！
 			userApi.GET("/tasks/:id/geojson", controller.ReadTaskAndGetGeoJSONHandler)
+
+			// 3.上传真实巡护轨迹
+			userApi.POST("/routes/upload", controller.UploadActualRouteHandler)
 		}
 	}
 
