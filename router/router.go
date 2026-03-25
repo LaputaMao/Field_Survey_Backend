@@ -75,6 +75,13 @@ func SetupRouter() *gin.Engine {
 
 			// 3.上传真实巡护轨迹
 			userApi.POST("/routes/upload", controller.UploadActualRouteHandler)
+
+			// 4. 自动填表
+			// tip 注意新增 shp 或者 tiff 数据时,需要使用shp2pgsql -s 4326 -I my_file.shp table_a | psql -d my_db
+			// tip 和raster2pgsql -s 4326 -I -C -M -t 100x100 "E:\Field_survey\precipitation.tif" public.precipitation | psql  -U postgres -d field_survey_db
+			// tip 命令进行底表导入,然后在注册表中增加对应 数据源 和 SQL 语句
+			userApi.POST("/auto-fill", controller.AutoFillAttrHandler)
+
 		}
 	}
 

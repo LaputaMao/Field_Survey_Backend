@@ -38,6 +38,7 @@ func UploadActualRoute(taskID, userID uint, pathID string, geomJson interface{},
 	}
 
 	// [可选项]：如果该任务是第一次上传轨迹，可以将任务状态变更为 "in_progress" (进行中)
+	// tip "任务完成" 的状态变更可以单独开一个接口
 	if task.Status == "pending" {
 		config.DB.Model(&task).Update("status", "in_progress")
 	}
