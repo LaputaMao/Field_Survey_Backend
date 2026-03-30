@@ -60,6 +60,7 @@ func SetupRouter() *gin.Engine {
 			thirdAdminApi.PUT("/workspaces/:id/read", controller.ReadWorkspaceHandler)
 
 			// 派发任务给调查员
+			// tip 使用 arcGIS 按照'姓名'字段切分成多个 shp 文件,名称不需要固定命名方式
 			thirdAdminApi.POST("/tasks/assign", controller.BulkAssignTaskHandler)
 		}
 
@@ -71,7 +72,14 @@ func SetupRouter() *gin.Engine {
 			userApi.GET("/my-tasks", controller.GetSurveyorTasksHandler)
 
 			// 2. App点击该任务时调用，消除红点并直接返回地图可以渲染的 GeoJSON 格式！
+			// tip 暂时弃用
 			userApi.GET("/tasks/:id/geojson", controller.ReadTaskAndGetGeoJSONHandler)
+
+			// ⭐ 升级后的接口：包含了规划数据(点+线)和实际轨迹数据
+			userApi.GET("/tasks/:id/detail", controller.ReadTaskDetailHandler)
+
+			//一键完成任务
+			userApi.PUT("/tasks/:id/complete", controller.CompleteTaskHandler)
 
 			// 3.上传真实巡护轨迹
 			userApi.POST("/routes/upload", controller.UploadActualRouteHandler)
@@ -82,6 +90,13 @@ func SetupRouter() *gin.Engine {
 			// tip 命令进行底表导入,然后在注册表中增加对应 数据源 和 SQL 语句
 			userApi.POST("/auto-fill", controller.AutoFillAttrHandler)
 
+			userApi.GET("/points/next-number", controller.GetNextPointNumberHandler)
+
+			// 5.上传调查点
+			userApi.POST("/points/upload", controller.UploadPointHandler)
+
+			// 考虑到前端需要显示图片，顺便把 uploads 目录代理为静态文件路由！
+			r.Static("/uploads", "./uploads")
 		}
 	}
 

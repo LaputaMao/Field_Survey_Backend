@@ -4,6 +4,7 @@ import (
 	"Field_Survey_Backend/config"
 	"Field_Survey_Backend/model"
 	"Field_Survey_Backend/utils"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -66,6 +67,16 @@ import (
 //
 //	return &task, nil
 //}
+
+// TaskDetailResponse 用于包裹给 App 端的完整地图数据
+type TaskDetailResponse struct {
+	PlannedGeoJSON *utils.FeatureCollection `json:"planned_geojson"`
+
+	// ⭐ 从 []string 修改为包含 JSON 对象的 Map 切片
+	ActualLineGeoms []map[string]interface{} `json:"actual_line_geoms"`
+
+	TaskStatus string `json:"task_status"`
+}
 
 // GetSurveyorTasks 调查员获取自己的任务
 func GetSurveyorTasks(surveyorID uint) ([]model.Task, error) {
@@ -245,6 +256,68 @@ func BulkAssignTasks(workspaceID, thirdAdminID uint, file multipart.File, fileHe
 				config.DB.Save(&task)
 			}
 		}()
+	}
+
+	return nil
+}
+
+// GetTaskDetail 获取任务详情
+func GetTaskDetail(taskID, surveyorID uint) (*TaskDetailResponse, error) {
+	var task model.Task
+	if err := config.DB.Where("id = ? AND assignee_id = ?", taskID, surveyorID).First(&task).Error; err != nil {
+		return nil, errors.New("任务不存在或无权访问")
+	}
+
+	// 1. 获取规划 GeoJSON
+	plannedGeoJSON, err := ParseTaskShpToGeoJSON(taskID, surveyorID)
+	if err != nil {
+		plannedGeoJSON = &utils.FeatureCollection{Type: "FeatureCollection", Features: []utils.Feature{}}
+	}
+
+	// 2. 从 actual_route 表中拉取所有历史轨迹
+	var actualRoutes []model.ActualRoute
+	config.DB.Where("task_id = ? AND user_id = ?", taskID, surveyorID).Find(&actualRoutes)
+
+	// ⭐ 定义新的切片存储解析后的 JSON 对象
+	var actualGeoms []map[string]interface{}
+	for _, route := range actualRoutes {
+		// 防御性判断，跳过空数据
+		if route.ActualLineGeom == "" {
+			continue
+		}
+
+		var featureObj map[string]interface{}
+		// 将文本形态的 JSON 解析为 Go 内存里的 Map 对象
+		err := json.Unmarshal([]byte(route.ActualLineGeom), &featureObj)
+		if err == nil {
+			actualGeoms = append(actualGeoms, featureObj)
+		}
+	}
+
+	return &TaskDetailResponse{
+		PlannedGeoJSON:  plannedGeoJSON,
+		ActualLineGeoms: actualGeoms, // 这里装进去的已经是结构化的对象了
+		TaskStatus:      task.Status,
+	}, nil
+}
+
+// CompleteTask 结束任务
+func CompleteTask(taskID, surveyorID uint) error {
+	now := time.Now()
+
+	// 使用 map 的方式进行 Updates，可以安全地无视 GORM 零值过滤机制，强行写入 updated_at 和 finished_at
+	res := config.DB.Model(&model.Task{}).
+		Where("id = ? AND assignee_id = ?", taskID, surveyorID).
+		Updates(map[string]interface{}{
+			"status":      "completed",
+			"finished_at": now,
+		})
+
+	if res.Error != nil {
+		return errors.New("操作数据库失败")
+	}
+	if res.RowsAffected == 0 {
+		return errors.New("任务不存在或您无权操作该任务")
 	}
 
 	return nil

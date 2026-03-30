@@ -78,3 +78,44 @@ func ReadTaskAndGetGeoJSONHandler(c *gin.Context) {
 		"data":    geoJsonData,
 	})
 }
+
+func ReadTaskDetailHandler(c *gin.Context) {
+	surveyorID, _ := c.Get("userID")
+	taskIDStr := c.Param("id")
+	taskID, _ := strconv.Atoi(taskIDStr)
+
+	// 1. 消除未读小红点
+	_ = service.MarkTaskAsRead(uint(taskID), surveyorID.(uint))
+
+	// 2. 获取聚合了 规划GeoJSON 和 实际轨迹Text 的详情
+	taskDetail, err := service.GetTaskDetail(uint(taskID), surveyorID.(uint))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "任务详情拉取成功",
+		"data":    taskDetail,
+	})
+}
+
+func CompleteTaskHandler(c *gin.Context) {
+	surveyorID, _ := c.Get("userID")
+	taskIDStr := c.Param("id")
+	taskID, err := strconv.Atoi(taskIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		return
+	}
+
+	err = service.CompleteTask(uint(taskID), surveyorID.(uint))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "任务已圆满完成！",
+	})
+}

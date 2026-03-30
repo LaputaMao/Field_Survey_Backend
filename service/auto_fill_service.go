@@ -1,29 +1,26 @@
 package service
 
 import (
-	"database/sql"
-	"fmt"
-	"time"
-
 	"Field_Survey_Backend/config"
 	"Field_Survey_Backend/model"
+	"database/sql"
 )
 
 // AutoFill 空间查询与规则编号生成
 func AutoFill(lon, lat float64, fields []string, routeID string, pointType string) (map[string]interface{}, error) {
 	resultMap := make(map[string]interface{})
 
-	// 1. ======= 固定规则生成点号/剖面号 =======
-	// (这部分实现了你说的：根据路线号和固定规则生成的逻辑)
-	// 比如规则为： 路线号 + 类型简写 + 当前时间戳简写
-	typePrefix := "P" // 默认普通点
-	if pointType == "剖面点" {
-		typePrefix = "S" // Section
-	}
-	timeSuffix := time.Now().Format("01021504") // 月日时分
-
-	generatedPointID := fmt.Sprintf("%s-%s-%s", routeID, typePrefix, timeSuffix)
-	resultMap["自动生成点号"] = generatedPointID
+	//// 1. ======= 固定规则生成点号/剖面号 =======
+	//// (这部分实现了你说的：根据路线号和固定规则生成的逻辑)
+	//// 比如规则为： 路线号 + 类型简写 + 当前时间戳简写
+	//typePrefix := "P" // 默认普通点
+	//if pointType == "剖面点" {
+	//	typePrefix = "S" // Section
+	//}
+	//timeSuffix := time.Now().Format("01021504") // 月日时分
+	//
+	//generatedPointID := fmt.Sprintf("%s-%s-%s", routeID, typePrefix, timeSuffix)
+	//resultMap["自动生成点号"] = generatedPointID
 
 	// 2. ======= 动态空间相交填表 =======
 

@@ -87,7 +87,7 @@ func GetManagedUsers(creatorID uint, searchName string) ([]model.User, error) {
 	}
 
 	// 隐藏密码返回
-	err := query.Select("id, username, email, role, creator_id, created_date, last_login_date, last_ip").Find(&users).Error
+	err := query.Select("id, username, email, role, creator_id, created_at, last_login_date, last_ip").Find(&users).Error
 	return users, err
 }
 
