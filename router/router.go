@@ -62,6 +62,11 @@ func SetupRouter() *gin.Engine {
 			// 派发任务给调查员
 			// tip 使用 arcGIS 按照'姓名'字段切分成多个 shp 文件,名称不需要固定命名方式
 			thirdAdminApi.POST("/tasks/assign", controller.BulkAssignTaskHandler)
+
+			// Web端左侧边栏：拿到管理结构
+			thirdAdminApi.GET("/web/workspaces-tree", controller.GetWebWorkspaceTreeHandler)
+			// Web端中间地图大屏：拿到大JSON
+			thirdAdminApi.GET("/web/task-dashboard", controller.GetWebTaskDetailHandler)
 		}
 
 		// --- 【调查员App业务组】 ---
@@ -96,6 +101,7 @@ func SetupRouter() *gin.Engine {
 			userApi.POST("/points/upload", controller.UploadPointHandler)
 
 			// 考虑到前端需要显示图片，顺便把 uploads 目录代理为静态文件路由！
+			// tip http://127.0.0.1:9096/uploads/points/user_5/20260329/t10......
 			r.Static("/uploads", "./uploads")
 		}
 	}
