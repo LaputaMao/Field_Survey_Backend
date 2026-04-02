@@ -32,28 +32,28 @@ func CreateProjectHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "项目创建成功", "data": project})
 }
 
-type AssignWorkspaceReq struct {
-	ProjectID          uint   `json:"project_id" binding:"required"`
-	WorkspaceName      string `json:"workspace_name" binding:"required"`
-	ThirdAdminUsername string `json:"third_admin_username" binding:"required"`
-	Description        string `json:"description"`
-}
-
-func AssignWorkspaceHandler(c *gin.Context) {
-	secAdminID, _ := c.Get("userID")
-	var req AssignWorkspaceReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误，请检查输入"})
-		return
-	}
-
-	workspace, err := service.AssignWorkspace(req.ProjectID, req.WorkspaceName, req.ThirdAdminUsername, req.Description, secAdminID.(uint))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"message": "任务工作区下发成功", "data": workspace})
-}
+//type AssignWorkspaceReq struct {
+//	ProjectID          uint   `json:"project_id" binding:"required"`
+//	WorkspaceName      string `json:"workspace_name" binding:"required"`
+//	ThirdAdminUsername string `json:"third_admin_username" binding:"required"`
+//	Description        string `json:"description"`
+//}
+//
+//func AssignWorkspaceHandler(c *gin.Context) {
+//	secAdminID, _ := c.Get("userID")
+//	var req AssignWorkspaceReq
+//	if err := c.ShouldBindJSON(&req); err != nil {
+//		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误，请检查输入"})
+//		return
+//	}
+//
+//	workspace, err := service.AssignWorkspace(req.ProjectID, req.WorkspaceName, req.ThirdAdminUsername, req.Description, secAdminID.(uint))
+//	if err != nil {
+//		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+//		return
+//	}
+//	c.JSON(http.StatusOK, gin.H{"message": "任务工作区下发成功", "data": workspace})
+//}
 
 // ---- [三管相关接口] ----
 

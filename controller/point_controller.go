@@ -26,6 +26,7 @@ func UploadPointHandler(c *gin.Context) {
 	typeStr := c.PostForm("type")
 	lonStr := c.PostForm("lon")
 	latStr := c.PostForm("lat")
+	pointSerial := c.PostForm("point_serial")
 	propertiesJson := c.PostForm("properties") // App 将填好的表单转为JSON字符串发过来
 
 	taskID, _ := strconv.Atoi(taskIDStr)
@@ -43,7 +44,7 @@ func UploadPointHandler(c *gin.Context) {
 	fileMap := form.File
 
 	// 4. 传给 Service 层进行原子处理
-	point, err := service.UploadSurveyPoint(uint(taskID), userID.(uint), pathID, pointType, lon, lat, propertiesJson, fileMap)
+	point, err := service.UploadSurveyPoint(uint(taskID), userID.(uint), pathID, pointType, pointSerial, lon, lat, propertiesJson, fileMap)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -83,5 +84,40 @@ func GetNextPointNumberHandler(c *gin.Context) {
 			// 顺便返回一个拼接好的完整编号供 App 偷懒直接用，比如: R1-1-012
 			//"full_code": fmt.Sprintf("%s-%d-%s", pathID, pointType, nextCode),
 		},
+	})
+}
+
+// UpdatePointHandler 一键混合更新表单：修改点位数据
+func UpdatePointHandler(c *gin.Context) {
+	userID, _ := c.Get("userID")
+
+	idStr := c.Param("id")
+	pointID, _ := strconv.Atoi(idStr)
+
+	if err := c.Request.ParseMultipartForm(32 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "表单解析失败"})
+		return
+	}
+
+	// App 把带有 “留存旧图标识” 的 JSON 传回来
+	propertiesJson := c.PostForm("properties")
+	if propertiesJson == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "properties 不得为空"})
+		return
+	}
+
+	// 获取可能存在的新上传图片 Map (如果没有新图，这里就是空的，也支持)
+	fileMap := c.Request.MultipartForm.File
+
+	// 交给大管家 Service 核心去剥离合并
+	updatedPoint, err := service.UpdateSurveyPoint(uint(pointID), userID.(uint), propertiesJson, fileMap)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "修改且同步图片成功！",
+		"data":    updatedPoint,
 	})
 }

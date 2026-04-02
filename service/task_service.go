@@ -71,11 +71,11 @@ import (
 // TaskDetailResponse 用于包裹给 App 端的完整地图数据
 type TaskDetailResponse struct {
 	PlannedGeoJSON *utils.FeatureCollection `json:"planned_geojson"`
-
 	// ⭐ 从 []string 修改为包含 JSON 对象的 Map 切片
 	ActualLineGeoms []map[string]interface{} `json:"actual_line_geoms"`
-
-	TaskStatus string `json:"task_status"`
+	// ⭐ 新增：实际调查打点的精简空间结构
+	ActualPointGeoms []map[string]interface{} `json:"actual_point_geoms"`
+	TaskStatus       string                   `json:"task_status"`
 }
 
 // GetSurveyorTasks 调查员获取自己的任务
@@ -278,7 +278,7 @@ func GetTaskDetail(taskID, surveyorID uint) (*TaskDetailResponse, error) {
 	var actualRoutes []model.ActualRoute
 	config.DB.Where("task_id = ? AND user_id = ?", taskID, surveyorID).Find(&actualRoutes)
 
-	// ⭐ 定义新的切片存储解析后的 JSON 对象
+	// 定义新的切片存储解析后的 JSON 对象
 	var actualGeoms []map[string]interface{}
 	for _, route := range actualRoutes {
 		// 防御性判断，跳过空数据
@@ -294,10 +294,43 @@ func GetTaskDetail(taskID, surveyorID uint) (*TaskDetailResponse, error) {
 		}
 	}
 
+	// 3. ⭐ 新增：从 points 表中拉取轻量级的打点地理信息 (忽略 properties)
+	type PointRecord struct {
+		ID          uint
+		PathID      string
+		Type        int
+		PointSerial string
+		GeomJson    string // 接收 PostGIS 返回的 GeoJSON 文本
+	}
+	var ptRecords []PointRecord
+
+	// 使用 ST_AsGeoJSON 将空间点直接转为标准 JSON 字符串
+	config.DB.Raw("SELECT id, path_id, type, point_serial, ST_AsGeoJSON(geom) as geom_json FROM points WHERE task_id = ? AND user_id = ?", taskID, surveyorID).Scan(&ptRecords)
+
+	var actualPtGeoms []map[string]interface{}
+	for _, pt := range ptRecords {
+		var geometryObj map[string]interface{}
+		if err := json.Unmarshal([]byte(pt.GeomJson), &geometryObj); err == nil {
+			// 将其封装为标准的 GeoJSON Feature 格式返给 App
+			feature := map[string]interface{}{
+				"type":     "Feature",
+				"geometry": geometryObj,
+				"properties": map[string]interface{}{
+					"point_id":     pt.ID,
+					"path_id":      pt.PathID,
+					"type":         pt.Type,
+					"point_serial": pt.PointSerial,
+				},
+			}
+			actualPtGeoms = append(actualPtGeoms, feature)
+		}
+	}
+
 	return &TaskDetailResponse{
-		PlannedGeoJSON:  plannedGeoJSON,
-		ActualLineGeoms: actualGeoms, // 这里装进去的已经是结构化的对象了
-		TaskStatus:      task.Status,
+		PlannedGeoJSON:   plannedGeoJSON,
+		ActualLineGeoms:  actualGeoms,   // 这里装进去的已经是结构化的对象了
+		ActualPointGeoms: actualPtGeoms, // ⭐ 将封装好的点位装入返回体
+		TaskStatus:       task.Status,
 	}, nil
 }
 

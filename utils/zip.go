@@ -2,11 +2,74 @@ package utils
 
 import (
 	"archive/zip"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+// UnzipAndFindShp 将 zip 解压到指定目录，并返回里面 .shp 文件的绝对/相对路径
+// destDir: 解压目标文件夹 (如 ./uploads/shps/task_123)
+func UnzipAndFindShp(zipFile, destDir string) (string, error) {
+	reader, err := zip.OpenReader(zipFile)
+	if err != nil {
+		return "", err
+	}
+	defer reader.Close()
+
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return "", err
+	}
+
+	shpFilePath := ""
+
+	for _, file := range reader.File {
+		// 防御 ZipSlip 漏洞
+		fpath := filepath.Join(destDir, file.Name)
+		if !strings.HasPrefix(fpath, filepath.Clean(destDir)+string(os.PathSeparator)) {
+			continue
+		}
+
+		if file.FileInfo().IsDir() {
+			os.MkdirAll(fpath, file.Mode())
+			continue
+		}
+
+		if err = os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
+			return "", err
+		}
+
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+		if err != nil {
+			return "", err
+		}
+
+		rc, err := file.Open()
+		if err != nil {
+			outFile.Close()
+			return "", err
+		}
+
+		_, err = io.Copy(outFile, rc)
+		outFile.Close()
+		rc.Close()
+		if err != nil {
+			return "", err
+		}
+
+		// 记录 .shp 文件的存放位置
+		if strings.HasSuffix(strings.ToLower(file.Name), ".shp") {
+			shpFilePath = fpath
+		}
+	}
+
+	if shpFilePath == "" {
+		return "", errors.New("压缩包内未找到 .shp 文件")
+	}
+
+	return shpFilePath, nil
+}
 
 // UnzipAndFindAllShps 将 zip 解压，并返回目录下找出的所有 .shp 文件的绝对路径列表
 func UnzipAndFindAllShps(zipFile, destDir string) ([]string, error) {

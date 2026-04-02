@@ -42,9 +42,17 @@ func SetupRouter() *gin.Engine {
 		secAdminApi := authApi.Group("/sec-admin")
 		secAdminApi.Use(middleware.RoleAuthMiddleware("sec_admin"))
 		{
-			// 创建项目
+			//// 创建项目
 			secAdminApi.POST("/projects", controller.CreateProjectHandler)
-			// 分发工作区给三管
+			//// 分发工作区给三管
+			//secAdminApi.POST("/workspaces/assign", controller.AssignWorkspaceHandler)
+
+			// 新增：全国底图基建
+			secAdminApi.POST("/basic-shps/upload", controller.UploadBasicShpHandler)
+			secAdminApi.GET("/basic-shps", controller.GetBasicShpListHandler)
+			secAdminApi.GET("/basic-shps/geojson", controller.GetBasicShpGeoJSONHandler)
+
+			// 重写：裁切实分发
 			secAdminApi.POST("/workspaces/assign", controller.AssignWorkspaceHandler)
 		}
 
@@ -67,6 +75,12 @@ func SetupRouter() *gin.Engine {
 			thirdAdminApi.GET("/web/workspaces-tree", controller.GetWebWorkspaceTreeHandler)
 			// Web端中间地图大屏：拿到大JSON
 			thirdAdminApi.GET("/web/task-dashboard", controller.GetWebTaskDetailHandler)
+
+			// 台账报表分页查询: GET /api/v1/third-admin/points?page=1&username=张三&date=2024-03-12
+			thirdAdminApi.GET("/points", controller.GetPointListHandler)
+
+			// 获取点位表单明细: GET /api/v1/third-admin/points/42/properties
+			thirdAdminApi.GET("/points/:id/properties", controller.GetPointPropertiesHandler)
 		}
 
 		// --- 【调查员App业务组】 ---
@@ -82,6 +96,9 @@ func SetupRouter() *gin.Engine {
 
 			// ⭐ 升级后的接口：包含了规划数据(点+线)和实际轨迹数据
 			userApi.GET("/tasks/:id/detail", controller.ReadTaskDetailHandler)
+
+			// ⭐ 新增：调查员获取自己某一个点位的完整表单与照片
+			userApi.GET("/points/:id/properties", controller.GetSurveyorPointPropertiesHandler)
 
 			//一键完成任务
 			userApi.PUT("/tasks/:id/complete", controller.CompleteTaskHandler)
@@ -99,6 +116,9 @@ func SetupRouter() *gin.Engine {
 
 			// 5.上传调查点
 			userApi.POST("/points/upload", controller.UploadPointHandler)
+
+			// ⭐ 新增：混合修改接口点位属性 (使用 POST 以更好支持 Multipart 请求)
+			userApi.POST("/points/:id/update", controller.UpdatePointHandler)
 
 			// 考虑到前端需要显示图片，顺便把 uploads 目录代理为静态文件路由！
 			// tip http://127.0.0.1:9096/uploads/points/user_5/20260329/t10......

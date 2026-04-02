@@ -54,6 +54,30 @@ func SingleShpToGeoJSON(shpPath string) *FeatureCollection {
 		case *shp.Point:
 			feature.Geometry.Type = "Point"
 			feature.Geometry.Coordinates = []float64{geom.X, geom.Y}
+		case *shp.Polygon:
+			// 面数据解析：PostGIS和标准GeoJSON的 Polygon 要求三维数组 [][][]float64
+			// 第一个数组是外沿边界，后续的数组是内部抠除的洞(Holes)
+			feature.Geometry.Type = "Polygon"
+			var rings [][][]float64
+			numParts := len(geom.Parts)
+
+			for i := 0; i < numParts; i++ {
+				start := geom.Parts[i]
+				var end int32
+				if i == numParts-1 {
+					end = int32(len(geom.Points))
+				} else {
+					end = geom.Parts[i+1]
+				}
+
+				var ring [][]float64
+				for j := start; j < end; j++ {
+					pt := geom.Points[j]
+					ring = append(ring, []float64{pt.X, pt.Y})
+				}
+				rings = append(rings, ring)
+			}
+			feature.Geometry.Coordinates = rings
 		default:
 			continue
 		}

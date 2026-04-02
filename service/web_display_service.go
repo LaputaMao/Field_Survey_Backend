@@ -157,13 +157,15 @@ func GeTaskComprehensiveDetail(thirdAdminID, taskID, userID uint) (*dto.TaskDeta
 	resp.GeoData.ActualPoints = &utils.FeatureCollection{Type: "FeatureCollection", Features: []utils.Feature{}}
 
 	type PointRecord struct {
+		ID       uint // ⭐ 加上 ID
 		GeomJson string
 		//Properties string // 获取 JSONB 文本
-		PathID string
-		Type   int
+		PathID      string
+		Type        int
+		PointSerial string
 	}
 	var ptRecords []PointRecord
-	config.DB.Raw("SELECT ST_AsGeoJSON(geom) as geom_json, path_id, type FROM points WHERE task_id = ?", taskID).Scan(&ptRecords)
+	config.DB.Raw("SELECT id, point_serial,ST_AsGeoJSON(geom) as geom_json, path_id, type FROM points WHERE task_id = ?", taskID).Scan(&ptRecords)
 
 	for _, pt := range ptRecords {
 		var geom utils.Geometry
@@ -181,6 +183,9 @@ func GeTaskComprehensiveDetail(thirdAdminID, taskID, userID uint) (*dto.TaskDeta
 		// 2. ⭐ 修改点：不再解析 pt.Properties，直接创建一个新的 map
 		props := make(map[string]interface{})
 		// 把关键系统标识也塞进属性里给前端显示
+		// ⭐ 把 point_id 和 serial 注入到前端可以读取到的 properties 里
+		props["point_id"] = pt.ID
+		props["point_serial"] = pt.PointSerial
 		props["_path_id"] = pt.PathID
 		props["_type"] = pt.Type
 
