@@ -2,7 +2,9 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
 
+	"Field_Survey_Backend/config"
 	"Field_Survey_Backend/service"
 	"Field_Survey_Backend/utils"
 
@@ -79,5 +81,51 @@ func AssignWorkspaceHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "任务工作区已成功从底图中裁切并下发！",
 		"data":    workspace,
+	})
+}
+
+// GetSecAdminWorkspaceGeoJSONHandler 二级管理员获取项目下属工作区GeoJSON
+func GetSecAdminWorkspaceGeoJSONHandler(c *gin.Context) {
+	creatorID, _ := c.Get("userID")
+	creatorRole, _ := c.Get("role")
+	if creatorRole.(string) != "sec_admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "权限不足，仅二级管理员可访问"})
+		return
+	}
+
+	projectIDStr := c.Query("project_id")
+	if projectIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "缺少 project_id 参数"})
+		return
+	}
+
+	projectID, err := strconv.Atoi(projectIDStr)
+	if err != nil || projectID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "project_id 参数无效"})
+		return
+	}
+
+	// 验证项目归属：二级管理员只能访问自己创建的项目
+	var count int64
+	err = config.DB.Table("projects").
+		Where("id = ? AND creator_id = ?", projectID, creatorID.(uint)).
+		Count(&count).Error
+	if err != nil || count == 0 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权访问该项目"})
+		return
+	}
+
+	// 硬编码的全国三级生态区SHP路径，可根据需要改为前端传递 shp_path 参数
+	shpPath := "./uploads/basic/全国三级生态区/全国三级生态区.shp"
+
+	geoJSON, err := service.GetWorkspaceGeoJSONByProjectID(uint(projectID), shpPath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "获取工作区GeoJSON成功",
+		"data":    geoJSON,
 	})
 }

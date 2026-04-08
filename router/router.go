@@ -26,7 +26,7 @@ func SetupRouter() *gin.Engine {
 
 		// 3. 只有二管 (sec_admin) 和 三管 (third_admin) 才能访问的管理接口组
 		adminApi := authApi.Group("/manage")
-		adminApi.Use(middleware.RoleAuthMiddleware("sec_admin", "third_admin"))
+		adminApi.Use(middleware.RoleAuthMiddleware("sec_admin", "third_admin", "first_admin"))
 		{
 			// 导入用户 Excel
 			adminApi.POST("/users/import", controller.UploadUsersExcelHandler)
@@ -36,6 +36,35 @@ func SetupRouter() *gin.Engine {
 			adminApi.PUT("/users/:id", controller.UpdateUserHandler)
 			// 删除某个下属用户 (RESTful 风格)
 			adminApi.DELETE("/users/:id", controller.DeleteUserHandler)
+		}
+
+		// 0. 一级管理员独有的操作专区
+		firstAdminApi := authApi.Group("/first-admin")
+		firstAdminApi.Use(middleware.RoleAuthMiddleware("first_admin"))
+		{
+			// 导入项目表
+			firstAdminApi.POST("/projects/import", controller.ImportProjectsHandler)
+			// 导入人员表
+			firstAdminApi.POST("/users/import", controller.ImportUsersHandler)
+			// 合并导入（项目和人员）
+			firstAdminApi.POST("/import-all", controller.CombinedImportHandler)
+
+			// 展示接口
+			firstAdminApi.GET("/projects-tree", controller.GetFirstAdminProjectsTreeHandler)
+			firstAdminApi.GET("/workspace-dashboard", controller.GetFirstAdminWorkspaceDashboardHandler)
+			firstAdminApi.GET("/points", controller.GetFirstAdminPointsHandler)
+			firstAdminApi.GET("/points/:id/properties", controller.GetFirstAdminPointPropertiesHandler)
+			// 导出接口
+			//firstAdminApi.GET("/workspaces/:workspace_id/export", controller.ExportWorkspaceDataHandler)
+			//firstAdminApi.GET("/workspaces/:workspace_id/export/trajectories", controller.ExportWorkspaceTrajectoriesHandler)
+			//firstAdminApi.GET("/workspaces/:workspace_id/export/points", controller.ExportWorkspacePointsHandler)
+			// 新增：全国底图基建
+			firstAdminApi.POST("/basic-shps/upload", controller.UploadBasicShpHandler)
+			firstAdminApi.GET("/basic-shps", controller.GetBasicShpListHandler)
+			firstAdminApi.GET("/basic-shps/geojson", controller.GetBasicShpGeoJSONHandler)
+
+			firstAdminApi.GET("/workspace/:id/export-shp", controller.ExportWorkspaceShpHandler)
+
 		}
 
 		// 1. 二级管理员独有的操作专区
@@ -48,12 +77,25 @@ func SetupRouter() *gin.Engine {
 			//secAdminApi.POST("/workspaces/assign", controller.AssignWorkspaceHandler)
 
 			// 新增：全国底图基建
-			secAdminApi.POST("/basic-shps/upload", controller.UploadBasicShpHandler)
-			secAdminApi.GET("/basic-shps", controller.GetBasicShpListHandler)
-			secAdminApi.GET("/basic-shps/geojson", controller.GetBasicShpGeoJSONHandler)
+			//secAdminApi.POST("/basic-shps/upload", controller.UploadBasicShpHandler)
+			//secAdminApi.GET("/basic-shps", controller.GetBasicShpListHandler)
+			//secAdminApi.GET("/basic-shps/geojson", controller.GetBasicShpGeoJSONHandler)
 
 			// 重写：裁切实分发
 			secAdminApi.POST("/workspaces/assign", controller.AssignWorkspaceHandler)
+
+			// 展示接口
+			secAdminApi.GET("/projects-tree", controller.GetSecAdminProjectsTreeHandler)
+			secAdminApi.GET("/workspace-dashboard", controller.GetSecAdminWorkspaceDashboardHandler)
+			secAdminApi.GET("/points", controller.GetSecAdminPointsHandler)
+			secAdminApi.GET("/points/:id/properties", controller.GetSecAdminPointPropertiesHandler)
+			// 新增：获取项目下属工作区GeoJSON
+			secAdminApi.GET("/workspaces/geojson", controller.GetSecAdminWorkspaceGeoJSONHandler)
+			// 导出接口
+			//secAdminApi.GET("/workspaces/:workspace_id/export", controller.ExportWorkspaceDataHandler)
+			//secAdminApi.GET("/workspaces/:workspace_id/export/trajectories", controller.ExportWorkspaceTrajectoriesHandler)
+			//secAdminApi.GET("/workspaces/:workspace_id/export/points", controller.ExportWorkspacePointsHandler)
+			secAdminApi.GET("/workspace/:id/export-shp", controller.ExportWorkspaceShpHandler)
 		}
 
 		// 2. 三级管理员独有的操作专区
@@ -75,12 +117,22 @@ func SetupRouter() *gin.Engine {
 			thirdAdminApi.GET("/web/workspaces-tree", controller.GetWebWorkspaceTreeHandler)
 			// Web端中间地图大屏：拿到大JSON
 			thirdAdminApi.GET("/web/task-dashboard", controller.GetWebTaskDetailHandler)
+			thirdAdminApi.GET("/workspace-dashboard", controller.GetThirdAdminWorkspaceDashboardHandler)
 
 			// 台账报表分页查询: GET /api/v1/third-admin/points?page=1&username=张三&date=2024-03-12
 			thirdAdminApi.GET("/points", controller.GetPointListHandler)
 
 			// 获取点位表单明细: GET /api/v1/third-admin/points/42/properties
 			thirdAdminApi.GET("/points/:id/properties", controller.GetPointPropertiesHandler)
+			// 导出接口
+			//thirdAdminApi.GET("/workspaces/:workspace_id/export", controller.ExportWorkspaceDataHandler)
+			//thirdAdminApi.GET("/workspaces/:workspace_id/export/trajectories", controller.ExportWorkspaceTrajectoriesHandler)
+			//thirdAdminApi.GET("/workspaces/:workspace_id/export/points", controller.ExportWorkspacePointsHandler)
+			// ⭐ 新增：工作区空间数据集一键导出
+			// 用法：GET /api/v1/third-admin/workspace/1/export-shp
+			thirdAdminApi.GET("/workspace/:id/export-shp", controller.ExportWorkspaceShpHandler)
+			// 新增：获取工作区GeoJSON
+			thirdAdminApi.GET("/workspaces/geojson", controller.GetThirdAdminWorkspaceGeoJSONHandler)
 		}
 
 		// --- 【调查员App业务组】 ---

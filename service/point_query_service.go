@@ -10,12 +10,32 @@ import (
 	"Field_Survey_Backend/model"
 )
 
-// GetPaginatedPoints 多条件分页查询点位精简列表
-func GetPaginatedPoints(page, pageSize int, username, dateStr, typeStr string) ([]dto.PointListItem, int64, error) {
+// GetPaginatedPoints 多条件分页查询点位精简列表（带权限过滤）
+func GetPaginatedPoints(page, pageSize int, username, dateStr, typeStr string, currentUserID uint, currentUserRole string) ([]dto.PointListItem, int64, error) {
 	// 联表查询：我们需要 points 所有的字段，并去 users 表抓一个 username 过来
 	query := config.DB.Table("points").
 		Select("points.id as point_id, points.task_id, points.path_id, points.type, points.point_serial, points.created_at, users.username").
 		Joins("left join users on points.user_id = users.id")
+
+	// 应用权限过滤
+	switch currentUserRole {
+	case "third_admin":
+		// 三级管理员只能查看自己负责的工作区下的点位
+		query = query.Joins("JOIN tasks ON points.task_id = tasks.id").
+			Joins("JOIN workspaces ON tasks.workspace_id = workspaces.id").
+			Where("workspaces.assignee_id = ?", currentUserID)
+	case "sec_admin":
+		// 二级管理员只能查看自己创建的项目下的点位
+		query = query.Joins("JOIN tasks ON points.task_id = tasks.id").
+			Joins("JOIN workspaces ON tasks.workspace_id = workspaces.id").
+			Joins("JOIN projects ON workspaces.project_id = projects.id").
+			Where("projects.creator_id = ?", currentUserID)
+	case "first_admin":
+		// 一级管理员可以查看所有点位，不需要额外过滤
+	default:
+		// 调查员只能查看自己的点位
+		query = query.Where("points.user_id = ?", currentUserID)
+	}
 
 	// --- 筛选叠加判断 ---
 	// 1. Username 筛选
