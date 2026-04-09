@@ -116,7 +116,7 @@ func GetSecAdminWorkspaceGeoJSONHandler(c *gin.Context) {
 	}
 
 	// 硬编码的全国三级生态区SHP路径，可根据需要改为前端传递 shp_path 参数
-	shpPath := "./uploads/basic/全国三级生态区/全国三级生态区.shp"
+	shpPath := "./uploads/basic/全国三级生态区/全国三级生态区2024.shp"
 
 	geoJSON, err := service.GetWorkspaceGeoJSONByProjectID(uint(projectID), shpPath)
 	if err != nil {
