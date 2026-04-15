@@ -10,6 +10,7 @@ type User struct {
 	Username      string    `Gorm:"uniqueIndex;not null;size:100" json:"username"`
 	Email         string    `Gorm:"size:100" json:"email"`
 	Password      string    `Gorm:"not null" json:"-"`            // json:"-" 保证密码不会被返回给前端
+	Phone         string    `Gorm:"size:20" json:"phone"`         // 电话
 	Role          string    `Gorm:"not null;size:20" json:"role"` // "user", "sec_admin", "fir_admin"
 	CreatedAt     time.Time `Gorm:"autoCreateTime" json:"created_at"`
 	LastLoginDate time.Time `json:"last_login_date"`

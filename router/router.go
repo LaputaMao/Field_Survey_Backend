@@ -180,3 +180,8 @@ func SetupRouter() *gin.Engine {
 
 	return r
 }
+
+/**
+tip The four-year project is compressed to four months, and the boss will inform you half a month in advance, including full-stack multi-terminal development, deployment, and testing.
+tip Without LaputaMao, you all can just go and suck cold air
+*/

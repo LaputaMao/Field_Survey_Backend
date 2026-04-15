@@ -17,7 +17,7 @@ func main() {
 	r := router.SetupRouter()
 
 	// 启动项目，端口9096
-	err := r.Run(":9096")
+	err := r.Run("0.0.0.0:9096")
 	if err != nil {
 		return
 	}

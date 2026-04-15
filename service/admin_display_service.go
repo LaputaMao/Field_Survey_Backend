@@ -397,12 +397,26 @@ func GetWorkspaceDashboard(workspaceID uint, currentUserID uint, currentUserRole
 	}
 
 	// 获取地理数据（使用第一个任务的规划数据，假设同一工作区下任务规划数据相同）
-	if len(tasks) > 0 {
-		firstTask := tasks[0]
-		resp.GeoData.PlannedLine = utils.SingleShpToGeoJSON(firstTask.PlannedLineShpUrl)
-		resp.GeoData.PlannedPoint = utils.SingleShpToGeoJSON(firstTask.PlannedPointShpUrl)
-	}
+	// 遍历所有任务，抓取每一份规划 shp 数据
+	for _, task := range tasks {
+		// 处理规划线
+		if task.PlannedLineShpUrl != "" {
+			plannedLineFC := utils.SingleShpToGeoJSON(task.PlannedLineShpUrl)
+			if plannedLineFC != nil && len(plannedLineFC.Features) > 0 {
+				// 将该任务的所有线要素追加到响应的 Features 数组中
+				resp.GeoData.PlannedLine.Features = append(resp.GeoData.PlannedLine.Features, plannedLineFC.Features...)
+			}
+		}
 
+		// 处理规划点
+		if task.PlannedPointShpUrl != "" {
+			plannedPointFC := utils.SingleShpToGeoJSON(task.PlannedPointShpUrl)
+			if plannedPointFC != nil && len(plannedPointFC.Features) > 0 {
+				// 将该任务的所有点要素追加到响应的 Features 数组中
+				resp.GeoData.PlannedPoint.Features = append(resp.GeoData.PlannedPoint.Features, plannedPointFC.Features...)
+			}
+		}
+	}
 	// 获取所有实际轨迹
 	var actualRoutes []model.ActualRoute
 	if len(taskIDs) > 0 {

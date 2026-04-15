@@ -88,7 +88,7 @@ func AutoFill(lon, lat float64, fields []string, routeID string, pointType strin
 				if val.Valid {
 					resultMap[fieldName] = val.String
 				} else {
-					resultMap[fieldName] = "无数据"
+					resultMap[fieldName] = "无数据(可能不在范围内)"
 				}
 			} else {
 				// ⭐ 如果有多列，存入一个子 Map
