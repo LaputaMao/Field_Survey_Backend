@@ -67,3 +67,11 @@ sudo docker exec -it postgis-server bash
 ## Gin 的标准访问日志
 
 journalctl -u FS_Backend.service -f
+
+    INSERT INTO users (username, email, password, phone, role, created_at, last_login_date, last_ip, creator_id) VALUES
+    ('一级项目负责人1', '@test.com', '$2a$10$oVamJtMxRBKQfizEoSPEqexuFoNtE.vU/.ilZaoTIJ110jYaJz4CC', '13800000001', 'first_admin', NOW(), NOW(), '127.0.0.1', 0),
+    ('一级项目负责人2', '@test.com', '$2a$10$oVamJtMxRBKQfizEoSPEqexuFoNtE.vU/.ilZaoTIJ110jYaJz4CC', '13800000002', 'first_admin', NOW(), NOW(), '127.0.0.1', 0);
+
+## 0417演示sql
+INSERT INTO workspaces (project_id, assignee_id, name, description, file_url) VALUES
+(1,152,'演示三级项目0417','演示','file');
